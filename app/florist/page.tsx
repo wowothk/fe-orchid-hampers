@@ -7,7 +7,9 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
 import Link from "next/link"
-import { Package, Eye, Clock, CheckCircle, Truck, Flower } from "lucide-react"
+import { Package, Eye, Clock, CheckCircle, Truck, Flower, CalendarDays, Gift } from "lucide-react"
+import { format } from "date-fns"
+import type { Extra } from "@/data/extras"
 
 type OrderItem = {
   product: {
@@ -16,8 +18,21 @@ type OrderItem = {
     description: string
     price: number
     image: string
+    stock: number
+    lowStockThreshold: number
   }
   quantity: number
+  selectedExtras?: Extra[]
+  deliveryDate?: Date | null
+  totalPrice?: number
+}
+
+type DeliveryOption = {
+  id: string
+  name: string
+  description: string
+  price: number
+  estimatedTime: string
 }
 
 type Order = {
@@ -32,6 +47,9 @@ type Order = {
   }
   items: OrderItem[]
   total: number
+  deliveryFee?: number
+  finalTotal?: number
+  selectedDelivery?: DeliveryOption
   paymentMethod: string
   status: string
   date: string
@@ -222,30 +240,59 @@ function FloristDashboardContent() {
                     <h4 className="font-medium text-sm text-gray-700 mb-3">Order Summary</h4>
                     <div className="space-y-1 text-sm">
                       <div className="flex justify-between">
-                        <span>Items:</span>
-                        <span>{order.items.reduce((sum, item) => sum + item.quantity, 0)}</span>
-                      </div>
-                      <div className="flex justify-between font-medium">
-                        <span>Total:</span>
+                        <span>Subtotal:</span>
                         <span>Rp {order.total.toLocaleString()}</span>
+                      </div>
+                      {order.selectedDelivery && (
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-1">
+                            <Truck className="h-3 w-3" />
+                            <span>{order.selectedDelivery.name}:</span>
+                          </div>
+                          <span>{order.deliveryFee === 0 ? "Free" : `Rp ${(order.deliveryFee || 0).toLocaleString()}`}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between font-medium border-t pt-1">
+                        <span>Total:</span>
+                        <span>Rp {(order.finalTotal || order.total).toLocaleString()}</span>
                       </div>
                     </div>
                     
                     <div className="mt-3 pt-3 border-t">
-                      <div className="space-y-1">
-                        {order.items.slice(0, 2).map((item) => (
-                          <div key={item.product.id} className="flex items-center gap-2">
-                            <div className="relative h-8 w-8 flex-shrink-0">
-                              <Image
-                                src={item.product.image}
-                                alt={item.product.name}
-                                fill
-                                className="object-cover rounded"
-                              />
+                      <div className="space-y-2">
+                        {order.items.slice(0, 2).map((item, index) => (
+                          <div key={`${item.product.id}-${index}`} className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <div className="relative h-8 w-8 flex-shrink-0">
+                                <Image
+                                  src={item.product.image}
+                                  alt={item.product.name}
+                                  fill
+                                  className="object-cover rounded"
+                                />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <span className="text-xs text-gray-600 truncate block">
+                                  {item.quantity}× {item.product.name}
+                                </span>
+                                {item.deliveryDate && (
+                                  <div className="flex items-center gap-1">
+                                    <CalendarDays className="h-3 w-3 text-green-600" />
+                                    <span className="text-xs text-green-600">
+                                      {format(new Date(item.deliveryDate), "MMM dd")}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                            <span className="text-xs text-gray-600 truncate">
-                              {item.quantity}× {item.product.name}
-                            </span>
+                            {item.selectedExtras && item.selectedExtras.length > 0 && (
+                              <div className="flex items-center gap-1 ml-10 pl-2 border-l-2 border-purple-100">
+                                <Gift className="h-3 w-3 text-purple-500" />
+                                <span className="text-xs text-purple-600">
+                                  +{item.selectedExtras.length} extra(s)
+                                </span>
+                              </div>
+                            )}
                           </div>
                         ))}
                         {order.items.length > 2 && (

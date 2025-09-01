@@ -8,9 +8,11 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowLeft, User, Lock } from "lucide-react"
+import { ArrowLeft, User, Lock, Package, CalendarDays, Truck, MapPin } from "lucide-react"
+import { format } from "date-fns"
 
 type CustomerInfo = {
   name: string
@@ -19,6 +21,15 @@ type CustomerInfo = {
   address: string
   city: string
   postalCode: string
+}
+
+type DeliveryOption = {
+  id: string
+  name: string
+  description: string
+  price: number
+  estimatedTime: string
+  logo?: string
 }
 
 export default function CheckoutPage() {
@@ -36,7 +47,36 @@ export default function CheckoutPage() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [orderCompleted, setOrderCompleted] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState("credit_card")
+  const [selectedDelivery, setSelectedDelivery] = useState("standard")
   const [orderId, setOrderId] = useState("")
+
+  const deliveryOptions: DeliveryOption[] = [
+    {
+      id: "standard",
+      name: "Standard Delivery",
+      description: "Our own delivery service with care and attention",
+      price: 0,
+      estimatedTime: "Same day delivery"
+    },
+    {
+      id: "lalamove",
+      name: "Lalamove",
+      description: "Fast and reliable third-party delivery",
+      price: 25000,
+      estimatedTime: "2-4 hours delivery"
+    },
+    {
+      id: "deliveree",
+      name: "Deliveree",
+      description: "Professional logistics delivery service",
+      price: 30000,
+      estimatedTime: "3-6 hours delivery"
+    }
+  ]
+
+  const selectedDeliveryOption = deliveryOptions.find(option => option.id === selectedDelivery)
+  const deliveryFee = selectedDeliveryOption?.price || 0
+  const finalTotal = state.total + deliveryFee
 
   // Show login prompt for guests
   if (!user && !orderCompleted) {
@@ -77,10 +117,17 @@ export default function CheckoutPage() {
             <div className="mt-8 pt-6 border-t">
               <h3 className="font-medium mb-4">Your Cart Summary</h3>
               <div className="space-y-2">
-                {state.items.map((item) => (
-                  <div key={item.product.id} className="flex items-center justify-between text-sm">
-                    <span>{item.quantity}× {item.product.name}</span>
-                    <span>Rp {(item.product.price * item.quantity).toLocaleString()}</span>
+                {state.items.map((item, index) => (
+                  <div key={`${item.product.id}-${index}`} className="text-sm">
+                    <div className="flex items-center justify-between">
+                      <span>{item.quantity}× {item.product.name}</span>
+                      <span>Rp {((item.totalPrice || item.product.price) * item.quantity).toLocaleString()}</span>
+                    </div>
+                    {item.selectedExtras && item.selectedExtras.length > 0 && (
+                      <div className="text-xs text-gray-500 ml-4">
+                        + {item.selectedExtras.length} extra(s)
+                      </div>
+                    )}
                   </div>
                 ))}
                 <div className="border-t pt-2 font-semibold">
@@ -135,6 +182,9 @@ export default function CheckoutPage() {
       customerInfo,
       items: state.items,
       total: state.total,
+      deliveryFee,
+      finalTotal,
+      selectedDelivery: selectedDeliveryOption,
       paymentMethod,
       status: "paid",
       date: new Date().toISOString(),
@@ -275,6 +325,58 @@ export default function CheckoutPage() {
 
           <Card>
             <CardHeader>
+              <CardTitle>Delivery Options</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-3">Choose Delivery Service</label>
+                <div className="space-y-3">
+                  {deliveryOptions.map((option) => (
+                    <div 
+                      key={option.id}
+                      className={`flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-colors ${
+                        selectedDelivery === option.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                      onClick={() => setSelectedDelivery(option.id)}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <input
+                          type="radio"
+                          id={option.id}
+                          name="delivery"
+                          value={option.id}
+                          checked={selectedDelivery === option.id}
+                          onChange={(e) => setSelectedDelivery(e.target.value)}
+                          className="w-4 h-4"
+                        />
+                        <div className="flex items-center gap-2">
+                          <Truck className="h-4 w-4 text-gray-600" />
+                          <div>
+                            <label htmlFor={option.id} className="font-medium text-sm cursor-pointer">
+                              {option.name}
+                            </label>
+                            <p className="text-xs text-gray-600">{option.description}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <MapPin className="h-3 w-3 text-gray-500" />
+                              <span className="text-xs text-gray-500">{option.estimatedTime}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <Badge variant={option.price === 0 ? "secondary" : "outline"}>
+                          {option.price === 0 ? "Free" : `Rp ${option.price.toLocaleString()}`}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
               <CardTitle>Payment Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -344,7 +446,7 @@ export default function CheckoutPage() {
                   <p className="text-sm text-blue-800">
                     <strong>Demo:</strong> Transfer to Bank ABC<br />
                     Account: 1234567890<br />
-                    Amount: Rp {state.total.toLocaleString()}
+                    Amount: Rp {finalTotal.toLocaleString()}
                   </p>
                 </div>
               )}
@@ -353,7 +455,7 @@ export default function CheckoutPage() {
                 <div className="pt-4 border-t bg-green-50 p-4 rounded-lg">
                   <p className="text-sm text-green-800">
                     <strong>Demo:</strong> Scan QR code or open your e-wallet app<br />
-                    Amount: Rp {state.total.toLocaleString()}
+                    Amount: Rp {finalTotal.toLocaleString()}
                   </p>
                 </div>
               )}
@@ -367,26 +469,54 @@ export default function CheckoutPage() {
               <CardTitle>Order Summary</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-3">
-                {state.items.map((item) => (
-                  <div key={item.product.id} className="flex gap-3">
-                    <div className="relative h-12 w-12 flex-shrink-0">
-                      <Image
-                        src={item.product.image}
-                        alt={item.product.name}
-                        fill
-                        className="object-cover rounded"
-                      />
+              <div className="space-y-4">
+                {state.items.map((item, index) => (
+                  <div key={`${item.product.id}-${index}`} className="space-y-2">
+                    <div className="flex gap-3">
+                      <div className="relative h-12 w-12 flex-shrink-0">
+                        <Image
+                          src={item.product.image}
+                          alt={item.product.name}
+                          fill
+                          className="object-cover rounded"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{item.product.name}</p>
+                        <p className="text-xs text-gray-600">Qty: {item.quantity}</p>
+                        
+                        {/* Delivery Date */}
+                        {item.deliveryDate && (
+                          <div className="flex items-center gap-1 text-xs text-green-600">
+                            <CalendarDays className="h-3 w-3" />
+                            <span>{format(new Date(item.deliveryDate), "MMM dd, yyyy")}</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <Badge variant="secondary" className="text-xs">
+                          Rp {((item.totalPrice || item.product.price) * item.quantity).toLocaleString()}
+                        </Badge>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{item.product.name}</p>
-                      <p className="text-xs text-gray-600">Qty: {item.quantity}</p>
-                    </div>
-                    <div className="text-right">
-                      <Badge variant="secondary" className="text-xs">
-                        Rp {(item.product.price * item.quantity).toLocaleString()}
-                      </Badge>
-                    </div>
+                    
+                    {/* Extras Display */}
+                    {item.selectedExtras && item.selectedExtras.length > 0 && (
+                      <div className="ml-15 pl-3 border-l-2 border-gray-100">
+                        <div className="flex items-center gap-1 mb-1">
+                          <Package className="h-3 w-3 text-gray-500" />
+                          <span className="text-xs text-gray-600">Extras:</span>
+                        </div>
+                        <div className="space-y-1">
+                          {item.selectedExtras.map((extra) => (
+                            <div key={extra.id} className="flex justify-between text-xs">
+                              <span className="text-gray-600">{extra.name}</span>
+                              <span className="text-gray-600">+Rp {extra.price.toLocaleString()}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -397,13 +527,13 @@ export default function CheckoutPage() {
                   <span>Rp {state.total.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Delivery</span>
-                  <span>Free</span>
+                  <span>Delivery ({selectedDeliveryOption?.name})</span>
+                  <span>{deliveryFee === 0 ? "Free" : `Rp ${deliveryFee.toLocaleString()}`}</span>
                 </div>
                 <div className="border-t pt-2">
                   <div className="flex justify-between font-semibold text-lg">
                     <span>Total</span>
-                    <span>Rp {state.total.toLocaleString()}</span>
+                    <span>Rp {finalTotal.toLocaleString()}</span>
                   </div>
                 </div>
               </div>

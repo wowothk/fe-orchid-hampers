@@ -4,9 +4,11 @@ import { useCart } from "@/hooks/use-cart"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
 import Image from "next/image"
 import Link from "next/link"
-import { Minus, Plus, Trash2 } from "lucide-react"
+import { Minus, Plus, Trash2, CalendarDays, Package } from "lucide-react"
+import { format } from "date-fns"
 
 export default function CartPage() {
   const { state, updateQuantity, removeItem } = useCart()
@@ -29,8 +31,8 @@ export default function CartPage() {
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-4">
-          {state.items.map((item) => (
-            <Card key={item.product.id}>
+          {state.items.map((item, index) => (
+            <Card key={`${item.product.id}-${index}`}>
               <CardContent className="p-6">
                 <div className="flex gap-4">
                   <div className="relative h-24 w-24 flex-shrink-0">
@@ -42,12 +44,49 @@ export default function CartPage() {
                     />
                   </div>
                   
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-lg">{item.product.name}</h3>
-                    <p className="text-gray-600 text-sm mb-2">{item.product.description}</p>
-                    <Badge variant="secondary">
-                      Rp {item.product.price.toLocaleString()}
-                    </Badge>
+                  <div className="flex-1 space-y-3">
+                    <div>
+                      <h3 className="font-semibold text-lg">{item.product.name}</h3>
+                      <p className="text-gray-600 text-sm">{item.product.description}</p>
+                    </div>
+
+                    {/* Product Price */}
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary">
+                        Base: Rp {item.product.price.toLocaleString()}
+                      </Badge>
+                      <Badge variant="outline">
+                        Total: Rp {(item.totalPrice || item.product.price).toLocaleString()}
+                      </Badge>
+                    </div>
+
+                    {/* Extras Display */}
+                    {item.selectedExtras && item.selectedExtras.length > 0 && (
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Package className="h-4 w-4 text-gray-600" />
+                          <span className="text-sm font-medium text-gray-700">Selected Extras:</span>
+                        </div>
+                        <div className="space-y-1">
+                          {item.selectedExtras.map((extra) => (
+                            <div key={extra.id} className="flex justify-between items-center text-sm">
+                              <span className="text-gray-600">{extra.name}</span>
+                              <span className="text-gray-700">+Rp {extra.price.toLocaleString()}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Delivery Date */}
+                    {item.deliveryDate && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <CalendarDays className="h-4 w-4 text-green-600" />
+                        <span className="text-green-700 font-medium">
+                          Delivery: {format(new Date(item.deliveryDate), "EEEE, MMMM do, yyyy")}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   
                   <div className="flex flex-col items-end gap-2">
@@ -83,7 +122,10 @@ export default function CartPage() {
                     
                     <div className="text-right">
                       <p className="font-semibold">
-                        Rp {(item.product.price * item.quantity).toLocaleString()}
+                        Rp {((item.totalPrice || item.product.price) * item.quantity).toLocaleString()}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {item.quantity} × Rp {(item.totalPrice || item.product.price).toLocaleString()}
                       </p>
                     </div>
                   </div>

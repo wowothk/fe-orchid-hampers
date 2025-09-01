@@ -2,10 +2,14 @@
 
 import { createContext, useContext, useReducer, ReactNode, useState, useEffect } from "react"
 import type { Product } from "@/data/product"
+import type { Extra } from "@/data/extras"
 
 export type CartItem = {
   product: Product
   quantity: number
+  selectedExtras?: Extra[]
+  deliveryDate?: Date | null
+  totalPrice?: number
 }
 
 type CartState = {
@@ -14,34 +18,42 @@ type CartState = {
 }
 
 type CartAction = 
-  | { type: "ADD_ITEM"; product: Product }
+  | { type: "ADD_ITEM"; product: Product; selectedExtras: Extra[]; deliveryDate: Date | null }
   | { type: "REMOVE_ITEM"; productId: number }
   | { type: "UPDATE_QUANTITY"; productId: number; quantity: number }
   | { type: "CLEAR_CART" }
 
+const calculateItemPrice = (product: Product, extras: Extra[]): number => {
+  const extrasTotal = extras.reduce((sum, extra) => sum + extra.price, 0)
+  return product.price + extrasTotal
+}
+
+const getItemTotalPrice = (item: CartItem): number => {
+  // Handle legacy items that don't have totalPrice
+  if (item.totalPrice !== undefined) {
+    return item.totalPrice
+  }
+  // Calculate from product price and extras for legacy items
+  const extrasTotal = (item.selectedExtras || []).reduce((sum, extra) => sum + extra.price, 0)
+  return item.product.price + extrasTotal
+}
+
 const cartReducer = (state: CartState, action: CartAction): CartState => {
   switch (action.type) {
     case "ADD_ITEM": {
-      const existingItem = state.items.find(
-        item => item.product.id === action.product.id
-      )
+      const itemPrice = calculateItemPrice(action.product, action.selectedExtras)
+      const newItem: CartItem = {
+        product: action.product,
+        quantity: 1,
+        selectedExtras: action.selectedExtras,
+        deliveryDate: action.deliveryDate,
+        totalPrice: itemPrice
+      }
       
-      if (existingItem) {
-        const updatedItems = state.items.map(item =>
-          item.product.id === action.product.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        )
-        return {
-          items: updatedItems,
-          total: updatedItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0)
-        }
-      } else {
-        const updatedItems = [...state.items, { product: action.product, quantity: 1 }]
-        return {
-          items: updatedItems,
-          total: updatedItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0)
-        }
+      const updatedItems = [...state.items, newItem]
+      return {
+        items: updatedItems,
+        total: updatedItems.reduce((sum, item) => sum + (getItemTotalPrice(item) * item.quantity), 0)
       }
     }
     
@@ -49,7 +61,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
       const updatedItems = state.items.filter(item => item.product.id !== action.productId)
       return {
         items: updatedItems,
-        total: updatedItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0)
+        total: updatedItems.reduce((sum, item) => sum + (getItemTotalPrice(item) * item.quantity), 0)
       }
     }
     
@@ -62,7 +74,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
       
       return {
         items: updatedItems,
-        total: updatedItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0)
+        total: updatedItems.reduce((sum, item) => sum + (getItemTotalPrice(item) * item.quantity), 0)
       }
     }
     
@@ -77,7 +89,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
 
 type CartContextType = {
   state: CartState
-  addItem: (product: Product) => void
+  addItem: (product: Product, selectedExtras: Extra[], deliveryDate: Date | null) => void
   removeItem: (productId: number) => void
   updateQuantity: (productId: number, quantity: number) => void
   clearCart: () => void
@@ -94,7 +106,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setIsHydrated(true)
   }, [])
   
-  const addItem = (product: Product) => dispatch({ type: "ADD_ITEM", product })
+  const addItem = (product: Product, selectedExtras: Extra[], deliveryDate: Date | null) => 
+    dispatch({ type: "ADD_ITEM", product, selectedExtras, deliveryDate })
   const removeItem = (productId: number) => dispatch({ type: "REMOVE_ITEM", productId })
   const updateQuantity = (productId: number, quantity: number) => 
     dispatch({ type: "UPDATE_QUANTITY", productId, quantity })

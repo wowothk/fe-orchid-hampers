@@ -1,12 +1,15 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, use } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowLeft, Package, CheckCircle } from "lucide-react"
+import { ArrowLeft, Package, CheckCircle, CalendarDays, Truck, Gift } from "lucide-react"
+import { format } from "date-fns"
+import type { Extra } from "@/data/extras"
 
 type OrderItem = {
   product: {
@@ -15,8 +18,21 @@ type OrderItem = {
     description: string
     price: number
     image: string
+    stock: number
+    lowStockThreshold: number
   }
   quantity: number
+  selectedExtras?: Extra[]
+  deliveryDate?: Date | null
+  totalPrice?: number
+}
+
+type DeliveryOption = {
+  id: string
+  name: string
+  description: string
+  price: number
+  estimatedTime: string
 }
 
 type Order = {
@@ -31,22 +47,26 @@ type Order = {
   }
   items: OrderItem[]
   total: number
+  deliveryFee?: number
+  finalTotal?: number
+  selectedDelivery?: DeliveryOption
   paymentMethod: string
   status: string
   date: string
 }
 
-export default function OrderDetailPage({ params }: { params: { id: string } }) {
+export default function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = use(params)
   const [order, setOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     // Get orders from localStorage
     const orders = JSON.parse(localStorage.getItem("orders") || "[]")
-    const foundOrder = orders.find((o: Order) => o.id === params.id)
+    const foundOrder = orders.find((o: Order) => o.id === resolvedParams.id)
     setOrder(foundOrder || null)
     setLoading(false)
-  }, [params.id])
+  }, [resolvedParams.id])
 
   if (loading) {
     return (
@@ -145,29 +165,68 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
               <CardTitle>Order Items</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {order.items.map((item) => (
-                <div key={item.product.id} className="flex gap-4 p-4 border rounded-lg">
-                  <div className="relative h-20 w-20 flex-shrink-0">
-                    <Image
-                      src={item.product.image}
-                      alt={item.product.name}
-                      fill
-                      className="object-cover rounded-md"
-                    />
-                  </div>
-                  
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-lg">{item.product.name}</h3>
-                    <p className="text-gray-600 text-sm mb-2">{item.product.description}</p>
-                    <div className="flex justify-between items-center">
-                      <Badge variant="outline">
-                        Rp {item.product.price.toLocaleString()} × {item.quantity}
-                      </Badge>
-                      <span className="font-semibold">
-                        Rp {(item.product.price * item.quantity).toLocaleString()}
-                      </span>
+              {order.items.map((item, index) => (
+                <div key={`${item.product.id}-${index}`} className="p-4 border rounded-lg space-y-3">
+                  <div className="flex gap-4">
+                    <div className="relative h-20 w-20 flex-shrink-0">
+                      <Image
+                        src={item.product.image}
+                        alt={item.product.name}
+                        fill
+                        className="object-cover rounded-md"
+                      />
+                    </div>
+                    
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-lg">{item.product.name}</h3>
+                      <p className="text-gray-600 text-sm mb-2">{item.product.description}</p>
+                      
+                      {/* Delivery Date */}
+                      {item.deliveryDate && (
+                        <div className="flex items-center gap-2 mb-2">
+                          <CalendarDays className="h-4 w-4 text-green-600" />
+                          <span className="text-sm font-medium text-green-700">
+                            Delivery: {format(new Date(item.deliveryDate), "EEEE, MMMM do, yyyy")}
+                          </span>
+                        </div>
+                      )}
+
+                      <div className="flex justify-between items-center">
+                        <Badge variant="outline">
+                          Base: Rp {item.product.price.toLocaleString()} × {item.quantity}
+                        </Badge>
+                        <span className="font-semibold">
+                          Rp {((item.totalPrice || item.product.price) * item.quantity).toLocaleString()}
+                        </span>
+                      </div>
                     </div>
                   </div>
+
+                  {/* Extras Display */}
+                  {item.selectedExtras && item.selectedExtras.length > 0 && (
+                    <div className="bg-gray-50 p-3 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Gift className="h-4 w-4 text-purple-600" />
+                        <span className="text-sm font-medium text-gray-700">Selected Extras:</span>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {item.selectedExtras.map((extra) => (
+                          <div key={extra.id} className="flex justify-between items-center text-sm">
+                            <div>
+                              <span className="font-medium">{extra.name}</span>
+                              <p className="text-xs text-gray-600">{extra.description}</p>
+                            </div>
+                            <span className="text-gray-700 font-medium">+Rp {extra.price.toLocaleString()}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <Separator className="my-2" />
+                      <div className="flex justify-between text-sm font-medium">
+                        <span>Extras Total:</span>
+                        <span>+Rp {(item.selectedExtras || []).reduce((sum, extra) => sum + extra.price, 0).toLocaleString()}</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </CardContent>
@@ -177,12 +236,44 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
             <CardHeader>
               <CardTitle>Delivery Information</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
-              <div><strong>Name:</strong> {order.customerInfo.name}</div>
-              <div><strong>Email:</strong> {order.customerInfo.email}</div>
-              <div><strong>Phone:</strong> {order.customerInfo.phone}</div>
-              <div><strong>Address:</strong> {order.customerInfo.address}</div>
-              <div><strong>City:</strong> {order.customerInfo.city} {order.customerInfo.postalCode}</div>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <div><strong>Name:</strong> {order.customerInfo.name}</div>
+                <div><strong>Email:</strong> {order.customerInfo.email}</div>
+                <div><strong>Phone:</strong> {order.customerInfo.phone}</div>
+                <div><strong>Address:</strong> {order.customerInfo.address}</div>
+                <div><strong>City:</strong> {order.customerInfo.city} {order.customerInfo.postalCode}</div>
+              </div>
+
+              {/* Delivery Service */}
+              {order.selectedDelivery && (
+                <div className="bg-blue-50 p-3 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Truck className="h-4 w-4 text-blue-600" />
+                    <span className="font-medium text-blue-800">Delivery Service</span>
+                  </div>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span>Service:</span>
+                      <span className="font-medium">{order.selectedDelivery.name}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Description:</span>
+                      <span>{order.selectedDelivery.description}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Estimated Time:</span>
+                      <span>{order.selectedDelivery.estimatedTime}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Delivery Fee:</span>
+                      <span className="font-medium">
+                        {order.deliveryFee === 0 ? "Free" : `Rp ${(order.deliveryFee || 0).toLocaleString()}`}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -199,13 +290,13 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
                   <span>Rp {order.total.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Delivery</span>
-                  <span>Free</span>
+                  <span>Delivery ({order.selectedDelivery?.name || "Standard"})</span>
+                  <span>{order.deliveryFee === 0 ? "Free" : `Rp ${(order.deliveryFee || 0).toLocaleString()}`}</span>
                 </div>
                 <div className="border-t pt-2">
                   <div className="flex justify-between font-semibold text-lg">
                     <span>Total Paid</span>
-                    <span>Rp {order.total.toLocaleString()}</span>
+                    <span>Rp {(order.finalTotal || order.total).toLocaleString()}</span>
                   </div>
                 </div>
               </div>

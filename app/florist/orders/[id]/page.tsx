@@ -1,13 +1,16 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, use } from "react"
 import { ProtectedRoute } from "@/hooks/use-auth"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowLeft, Clock, Flower, Truck, CheckCircle, Package } from "lucide-react"
+import { ArrowLeft, Clock, Flower, Truck, CheckCircle, Package, CalendarDays, Gift, MapPin } from "lucide-react"
+import { format } from "date-fns"
+import type { Extra } from "@/data/extras"
 
 type OrderItem = {
   product: {
@@ -16,8 +19,21 @@ type OrderItem = {
     description: string
     price: number
     image: string
+    stock: number
+    lowStockThreshold: number
   }
   quantity: number
+  selectedExtras?: Extra[]
+  deliveryDate?: Date | null
+  totalPrice?: number
+}
+
+type DeliveryOption = {
+  id: string
+  name: string
+  description: string
+  price: number
+  estimatedTime: string
 }
 
 type Order = {
@@ -32,23 +48,27 @@ type Order = {
   }
   items: OrderItem[]
   total: number
+  deliveryFee?: number
+  finalTotal?: number
+  selectedDelivery?: DeliveryOption
   paymentMethod: string
   status: string
   date: string
 }
 
-function FloristOrderDetailContent({ params }: { params: { id: string } }) {
+function FloristOrderDetailContent({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = use(params)
   const [order, setOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState(false)
 
   useEffect(() => {
     loadOrder()
-  }, [params.id])
+  }, [resolvedParams.id])
 
   const loadOrder = () => {
     const orders = JSON.parse(localStorage.getItem("orders") || "[]")
-    const foundOrder = orders.find((o: Order) => o.id === params.id)
+    const foundOrder = orders.find((o: Order) => o.id === resolvedParams.id)
     setOrder(foundOrder || null)
     setLoading(false)
   }
@@ -204,34 +224,77 @@ function FloristOrderDetailContent({ params }: { params: { id: string } }) {
               <CardTitle>Flower Arrangements Needed</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {order.items.map((item) => (
-                <div key={item.product.id} className="flex gap-4 p-4 border rounded-lg">
-                  <div className="relative h-20 w-20 flex-shrink-0">
-                    <Image
-                      src={item.product.image}
-                      alt={item.product.name}
-                      fill
-                      className="object-cover rounded-md"
-                    />
-                  </div>
-                  
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-lg">{item.product.name}</h3>
-                    <p className="text-gray-600 text-sm mb-2">{item.product.description}</p>
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-4">
-                        <Badge variant="outline" className="bg-blue-50">
-                          Quantity: {item.quantity}
-                        </Badge>
-                        <span className="text-sm text-gray-600">
-                          Rp {item.product.price.toLocaleString()} each
+              {order.items.map((item, index) => (
+                <div key={`${item.product.id}-${index}`} className="p-4 border rounded-lg space-y-4">
+                  <div className="flex gap-4">
+                    <div className="relative h-20 w-20 flex-shrink-0">
+                      <Image
+                        src={item.product.image}
+                        alt={item.product.name}
+                        fill
+                        className="object-cover rounded-md"
+                      />
+                    </div>
+                    
+                    <div className="flex-1 space-y-2">
+                      <div>
+                        <h3 className="font-semibold text-lg">{item.product.name}</h3>
+                        <p className="text-gray-600 text-sm">{item.product.description}</p>
+                      </div>
+
+                      {/* Delivery Date for this Item */}
+                      {item.deliveryDate && (
+                        <div className="bg-green-50 p-2 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <CalendarDays className="h-4 w-4 text-green-600" />
+                            <span className="text-sm font-medium text-green-700">
+                              Delivery Date: {format(new Date(item.deliveryDate), "EEEE, MMMM do, yyyy")}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-4">
+                          <Badge variant="outline" className="bg-blue-50">
+                            Quantity: {item.quantity}
+                          </Badge>
+                          <span className="text-sm text-gray-600">
+                            Base: Rp {item.product.price.toLocaleString()} each
+                          </span>
+                        </div>
+                        <span className="font-semibold">
+                          Rp {((item.totalPrice || item.product.price) * item.quantity).toLocaleString()}
                         </span>
                       </div>
-                      <span className="font-semibold">
-                        Rp {(item.product.price * item.quantity).toLocaleString()}
-                      </span>
                     </div>
                   </div>
+
+                  {/* Extras for this Item */}
+                  {item.selectedExtras && item.selectedExtras.length > 0 && (
+                    <div className="bg-purple-50 p-3 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Gift className="h-4 w-4 text-purple-600" />
+                        <span className="text-sm font-medium text-purple-700">Special Extras for Florist:</span>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {item.selectedExtras.map((extra) => (
+                          <div key={extra.id} className="flex justify-between items-start text-sm bg-white p-2 rounded">
+                            <div>
+                              <span className="font-medium text-purple-800">{extra.name}</span>
+                              <p className="text-xs text-purple-600">{extra.description}</p>
+                            </div>
+                            <span className="text-purple-700 font-medium">+Rp {extra.price.toLocaleString()}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <Separator className="my-2" />
+                      <div className="flex justify-between text-sm font-medium text-purple-800">
+                        <span>Total Extras:</span>
+                        <span>+Rp {(item.selectedExtras || []).reduce((sum, extra) => sum + extra.price, 0).toLocaleString()}</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </CardContent>
@@ -263,23 +326,56 @@ function FloristOrderDetailContent({ params }: { params: { id: string } }) {
             <CardHeader>
               <CardTitle>Delivery Information</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
+            <CardContent className="space-y-4">
+              <div className="space-y-3">
                 <div>
                   <label className="text-sm font-medium text-gray-700">Delivery Address</label>
-                  <p className="text-sm text-gray-600">{order.customerInfo.address}</p>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">City</label>
-                    <p className="text-sm text-gray-600">{order.customerInfo.city}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">Postal Code</label>
-                    <p className="text-sm text-gray-600">{order.customerInfo.postalCode}</p>
+                  <div className="flex items-start gap-2 mt-1">
+                    <MapPin className="h-4 w-4 text-gray-500 mt-0.5" />
+                    <div className="text-sm text-gray-600">
+                      <p>{order.customerInfo.address}</p>
+                      <p>{order.customerInfo.city} {order.customerInfo.postalCode}</p>
+                    </div>
                   </div>
                 </div>
               </div>
+
+              {/* Delivery Service Details */}
+              {order.selectedDelivery && (
+                <div className="bg-blue-50 p-3 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Truck className="h-4 w-4 text-blue-600" />
+                    <span className="font-medium text-blue-800">Delivery Service</span>
+                  </div>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span>Service:</span>
+                      <span className="font-medium">{order.selectedDelivery.name}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Description:</span>
+                      <span>{order.selectedDelivery.description}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Estimated Time:</span>
+                      <span>{order.selectedDelivery.estimatedTime}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Delivery Fee:</span>
+                      <span className="font-medium">
+                        {order.deliveryFee === 0 ? "Free" : `Rp ${(order.deliveryFee || 0).toLocaleString()}`}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {order.selectedDelivery.id !== "standard" && (
+                    <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
+                      <strong>Note:</strong> Third-party delivery service will handle the delivery. 
+                      Ensure arrangement is ready by the estimated time.
+                    </div>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -296,13 +392,13 @@ function FloristOrderDetailContent({ params }: { params: { id: string } }) {
                   <span>Rp {order.total.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Delivery</span>
-                  <span>Free</span>
+                  <span>Delivery ({order.selectedDelivery?.name || "Standard"})</span>
+                  <span>{order.deliveryFee === 0 ? "Free" : `Rp ${(order.deliveryFee || 0).toLocaleString()}`}</span>
                 </div>
                 <div className="border-t pt-2">
                   <div className="flex justify-between font-semibold text-lg">
                     <span>Total</span>
-                    <span>Rp {order.total.toLocaleString()}</span>
+                    <span>Rp {(order.finalTotal || order.total).toLocaleString()}</span>
                   </div>
                 </div>
               </div>
@@ -363,7 +459,7 @@ function FloristOrderDetailContent({ params }: { params: { id: string } }) {
   )
 }
 
-export default function FloristOrderDetailPage({ params }: { params: { id: string } }) {
+export default function FloristOrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   return (
     <ProtectedRoute allowedRoles={["florist", "admin"]}>
       <FloristOrderDetailContent params={params} />

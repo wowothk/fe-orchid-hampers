@@ -117,7 +117,7 @@ function AdminPanelContent() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <Card className="hover:shadow-lg transition-shadow cursor-pointer">
           <CardContent className="p-6">
             <Link href="/florist" className="block">
@@ -144,6 +144,22 @@ function AdminPanelContent() {
                 <div>
                   <h3 className="font-semibold text-lg">Catalog View</h3>
                   <p className="text-sm text-gray-600">Browse product catalog</p>
+                </div>
+              </div>
+            </Link>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+          <CardContent className="p-6">
+            <Link href="/admin/stock" className="block">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-purple-100 rounded-lg">
+                  <Package className="h-6 w-6 text-purple-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg">Stock Management</h3>
+                  <p className="text-sm text-gray-600">Manage product inventory</p>
                 </div>
               </div>
             </Link>

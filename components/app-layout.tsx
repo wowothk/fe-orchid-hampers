@@ -2,7 +2,7 @@
 
 import { ReactNode, useState } from "react"
 import Link from "next/link"
-import { Home, ShoppingCart, List, User } from "lucide-react"
+import { Home, ShoppingCart, List, User, LayoutDashboard, Package } from "lucide-react"
 import {
   Sidebar,
   SidebarHeader,
@@ -111,20 +111,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
                       <SidebarMenuItem>
                         <SidebarMenuButton asChild>
                           <Link href="/florist" className="flex items-center gap-2">
-                            <User className="h-4 w-4 shrink-0" />
+                            <LayoutDashboard className="h-4 w-4 shrink-0" />
                             <span className="group-data-[collapsible=icon]:hidden">
                               Dashboard
-                            </span>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-
-                      <SidebarMenuItem>
-                        <SidebarMenuButton asChild>
-                          <Link href="/" className="flex items-center gap-2">
-                            <Home className="h-4 w-4 shrink-0" />
-                            <span className="group-data-[collapsible=icon]:hidden">
-                              Catalog
                             </span>
                           </Link>
                         </SidebarMenuButton>
@@ -138,7 +127,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
                       <SidebarMenuItem>
                         <SidebarMenuButton asChild>
                           <Link href="/admin" className="flex items-center gap-2">
-                            <User className="h-4 w-4 shrink-0" />
+                            <LayoutDashboard className="h-4 w-4 shrink-0" />
                             <span className="group-data-[collapsible=icon]:hidden">
                               Admin Panel
                             </span>
@@ -159,10 +148,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
                       <SidebarMenuItem>
                         <SidebarMenuButton asChild>
-                          <Link href="/" className="flex items-center gap-2">
-                            <Home className="h-4 w-4 shrink-0" />
+                          <Link href="/admin/stock" className="flex items-center gap-2">
+                            <Package className="h-4 w-4 shrink-0" />
                             <span className="group-data-[collapsible=icon]:hidden">
-                              Catalog
+                              Stock Management
                             </span>
                           </Link>
                         </SidebarMenuButton>

@@ -6,7 +6,9 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
 import Link from "next/link"
-import { Package, ShoppingBag, Eye } from "lucide-react"
+import { Package, ShoppingBag, Eye, CalendarDays, Truck } from "lucide-react"
+import { format } from "date-fns"
+import type { Extra } from "@/data/extras"
 
 type OrderItem = {
   product: {
@@ -15,8 +17,21 @@ type OrderItem = {
     description: string
     price: number
     image: string
+    stock: number
+    lowStockThreshold: number
   }
   quantity: number
+  selectedExtras: Extra[]
+  deliveryDate: Date | null
+  totalPrice: number
+}
+
+type DeliveryOption = {
+  id: string
+  name: string
+  description: string
+  price: number
+  estimatedTime: string
 }
 
 type Order = {
@@ -31,6 +46,9 @@ type Order = {
   }
   items: OrderItem[]
   total: number
+  deliveryFee?: number
+  finalTotal?: number
+  selectedDelivery?: DeliveryOption
   paymentMethod: string
   status: string
   date: string
@@ -157,21 +175,34 @@ export default function OrdersPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <h4 className="font-medium text-sm text-gray-700 mb-3">Items Ordered</h4>
-                  <div className="space-y-2">
-                    {order.items.slice(0, 2).map((item) => (
-                      <div key={item.product.id} className="flex items-center gap-3">
-                        <div className="relative h-12 w-12 flex-shrink-0">
-                          <Image
-                            src={item.product.image}
-                            alt={item.product.name}
-                            fill
-                            className="object-cover rounded"
-                          />
+                  <div className="space-y-3">
+                    {order.items.slice(0, 2).map((item, index) => (
+                      <div key={`${item.product.id}-${index}`} className="space-y-1">
+                        <div className="flex items-center gap-3">
+                          <div className="relative h-12 w-12 flex-shrink-0">
+                            <Image
+                              src={item.product.image}
+                              alt={item.product.name}
+                              fill
+                              className="object-cover rounded"
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm truncate">{item.product.name}</p>
+                            <p className="text-xs text-gray-600">Qty: {item.quantity}</p>
+                            {item.deliveryDate && (
+                              <div className="flex items-center gap-1 text-xs text-green-600">
+                                <CalendarDays className="h-3 w-3" />
+                                <span>{format(new Date(item.deliveryDate), "MMM dd")}</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm truncate">{item.product.name}</p>
-                          <p className="text-xs text-gray-600">Qty: {item.quantity}</p>
-                        </div>
+                        {item.selectedExtras && item.selectedExtras.length > 0 && (
+                          <p className="text-xs text-gray-500 ml-15 pl-3 border-l-2 border-gray-100">
+                            +{item.selectedExtras.length} extra(s)
+                          </p>
+                        )}
                       </div>
                     ))}
                     {order.items.length > 2 && (
@@ -186,8 +217,21 @@ export default function OrdersPage() {
                   <h4 className="font-medium text-sm text-gray-700 mb-3">Order Summary</h4>
                   <div className="space-y-1 text-sm">
                     <div className="flex justify-between">
+                      <span>Subtotal:</span>
+                      <span>Rp {order.total.toLocaleString()}</span>
+                    </div>
+                    {order.selectedDelivery && (
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-1">
+                          <Truck className="h-3 w-3" />
+                          <span>{order.selectedDelivery.name}:</span>
+                        </div>
+                        <span>{order.deliveryFee === 0 ? "Free" : `Rp ${(order.deliveryFee || 0).toLocaleString()}`}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between font-semibold border-t pt-1">
                       <span>Total Amount:</span>
-                      <span className="font-semibold">Rp {order.total.toLocaleString()}</span>
+                      <span>Rp {(order.finalTotal || order.total).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Payment:</span>
