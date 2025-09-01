@@ -35,6 +35,8 @@ export default function CheckoutPage() {
   })
   const [isProcessing, setIsProcessing] = useState(false)
   const [orderCompleted, setOrderCompleted] = useState(false)
+  const [paymentMethod, setPaymentMethod] = useState("credit_card")
+  const [orderId, setOrderId] = useState("")
 
   // Show login prompt for guests
   if (!user && !orderCompleted) {
@@ -114,9 +116,6 @@ export default function CheckoutPage() {
   const isFormValid = () => {
     return Object.values(customerInfo).every(value => value.trim() !== "")
   }
-
-  const [paymentMethod, setPaymentMethod] = useState("credit_card")
-  const [orderId, setOrderId] = useState("")
 
   const handleSubmitOrder = async () => {
     if (!isFormValid()) return
