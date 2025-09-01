@@ -172,7 +172,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
               <SidebarTrigger />
             </div>
             <div className="flex-1 text-center">
-              <h1 className="font-semibold text-lg">Marketplace</h1>
+              <h1 className="font-semibold text-lg hidden sm:inline">Marketplace</h1>
             </div>
             <div className="flex items-center gap-2">
               {user ? (
@@ -191,9 +191,22 @@ export function AppLayout({ children }: { children: ReactNode }) {
                       </Badge>
                     </div>
                   </div>
+                  {user.userType === "customer" && (
+                    <Link href="/orders" className="relative md:hidden sm:inlin mr-2">
+                      <ShoppingCart className="h-5 w-5" />
+                      {itemCount > 0 && (
+                        <Badge
+                          variant="secondary"
+                          className="absolute -top-1 -right-2  px-1.5 py-0 text-xs"
+                        >
+                          {itemCount}
+                        </Badge>
+                      )}
+                    </Link>
+                  )}
                   <Button variant="outline" size="sm" onClick={logout}>
-                    <LogOut className="h-4 w-4 mr-2" />
-                    Logout
+                    <LogOut className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Logout</span>
                   </Button>
                 </>
               ) : (

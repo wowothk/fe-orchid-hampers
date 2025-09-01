@@ -34,8 +34,10 @@ export default function CartPage() {
           {state.items.map((item, index) => (
             <Card key={`${item.product.id}-${index}`}>
               <CardContent className="p-6">
-                <div className="flex gap-4">
-                  <div className="relative h-24 w-24 flex-shrink-0">
+                <div className="flex flex-col md:flex-row sm:flex-row gap-4">
+                  
+                  {/* Product Image */}
+                  <div className="relative h-32 w-32 md:h-24 md:w-24 flex-shrink-0 mx-auto md:mx-0">
                     <Image
                       src={item.product.image}
                       alt={item.product.name}
@@ -44,6 +46,7 @@ export default function CartPage() {
                     />
                   </div>
                   
+                  {/* Main Info */}
                   <div className="flex-1 space-y-3">
                     <div>
                       <h3 className="font-semibold text-lg">{item.product.name}</h3>
@@ -51,7 +54,7 @@ export default function CartPage() {
                     </div>
 
                     {/* Product Price */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <Badge variant="secondary">
                         Base: Rp {item.product.price.toLocaleString()}
                       </Badge>
@@ -61,7 +64,7 @@ export default function CartPage() {
                     </div>
 
                     {/* Extras Display */}
-                    {item.selectedExtras && item.selectedExtras.length > 0 && (
+                    {item.selectedExtras?.length > 0 && (
                       <div className="bg-gray-50 p-3 rounded-lg">
                         <div className="flex items-center gap-2 mb-2">
                           <Package className="h-4 w-4 text-gray-600" />
@@ -88,8 +91,10 @@ export default function CartPage() {
                       </div>
                     )}
                   </div>
-                  
-                  <div className="flex flex-col items-end gap-2">
+
+                  {/* Actions & Quantity Control */}
+                  <div className="flex md:flex-col items-center md:items-end justify-between gap-2 md:gap-3 w-full md:w-auto mt-4 md:mt-0">
+                    
                     <Button
                       variant="ghost"
                       size="sm"
@@ -132,6 +137,7 @@ export default function CartPage() {
                 </div>
               </CardContent>
             </Card>
+
           ))}
         </div>
         
