@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { ProtectedRoute } from "@/hooks/use-auth"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+// import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { Settings, Users, Package, BarChart3, Flower, ShoppingCart, List } from "lucide-react"
 

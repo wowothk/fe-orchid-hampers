@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useCart } from "@/hooks/use-cart"
 import { useAuth } from "@/hooks/use-auth"
 import { useRouter } from "next/navigation"
@@ -68,7 +68,7 @@ export default function CheckoutPage() {
               </Link>
               
               <div className="text-sm text-gray-500">
-                <p>Don't have an account? You can create one during the login process.</p>
+                <p>Don&apos;t have an account? You can create one during the login process.</p>
               </div>
             </div>
 
@@ -163,7 +163,7 @@ export default function CheckoutPage() {
             Order ID: <span className="font-mono font-semibold">{orderId}</span>
           </p>
           <p className="text-gray-600 mb-6">
-            Thank you for your order. We'll send you a confirmation email shortly.
+            Thank you for your order. We&apos;ll send you a confirmation email shortly.
           </p>
         </div>
         

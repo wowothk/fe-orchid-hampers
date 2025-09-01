@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowLeft, Package, CheckCircle, Clock, Flower, Truck } from "lucide-react"
+import { ArrowLeft, Package, CheckCircle } from "lucide-react"
 
 type OrderItem = {
   product: {
@@ -62,7 +62,7 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
       <div className="text-center py-12">
         <Package className="h-16 w-16 text-gray-400 mx-auto mb-4" />
         <h1 className="text-2xl font-bold mb-4">Order Not Found</h1>
-        <p className="text-gray-600 mb-6">The order you're looking for doesn't exist.</p>
+        <p className="text-gray-600 mb-6">The order you&apos;re looking for doesn&apos;t exist.</p>
         <Link href="/orders">
           <Button>Back to Orders</Button>
         </Link>

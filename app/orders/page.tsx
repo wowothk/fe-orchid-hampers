@@ -65,7 +65,7 @@ export default function OrdersPage() {
       <div className="text-center py-12">
         <Package className="h-16 w-16 text-gray-400 mx-auto mb-4" />
         <h1 className="text-2xl font-bold mb-4">No Orders Yet</h1>
-        <p className="text-gray-600 mb-6">You haven't placed any orders. Start shopping for beautiful flowers!</p>
+        <p className="text-gray-600 mb-6">You haven&apos;t placed any orders. Start shopping for beautiful flowers!</p>
         <Link href="/">
           <Button>
             <ShoppingBag className="h-4 w-4 mr-2" />
