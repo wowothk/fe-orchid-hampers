@@ -64,14 +64,14 @@ export default function CartPage() {
                     </div>
 
                     {/* Extras Display */}
-                    {item.selectedExtras?.length > 0 && (
+                    {item.selectedExtras && item.selectedExtras.length > 0 && (
                       <div className="bg-gray-50 p-3 rounded-lg">
                         <div className="flex items-center gap-2 mb-2">
                           <Package className="h-4 w-4 text-gray-600" />
                           <span className="text-sm font-medium text-gray-700">Selected Extras:</span>
                         </div>
                         <div className="space-y-1">
-                          {item.selectedExtras.map((extra) => (
+                          {item.selectedExtras?.map((extra) => (
                             <div key={extra.id} className="flex justify-between items-center text-sm">
                               <span className="text-gray-600">{extra.name}</span>
                               <span className="text-gray-700">+Rp {extra.price.toLocaleString()}</span>
